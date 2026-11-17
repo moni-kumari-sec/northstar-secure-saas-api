@@ -20,9 +20,9 @@ Orders and invoices, user profiles and roles, access tokens, audit log.
 
 | # | Asset | Data flow | STRIDE | Abuse scenario | Impact | Proposed control | Linked test | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Orders | User to GET /orders/{id} | Information disclosure | Tenant A changes the ID to read Tenant B's order | Cross-tenant data leak | Tenant-scoped queries | SEC-01 tests | Planned |
-| 2 | Admin audit log | User to GET /admin/audit | Elevation of privilege | Normal user calls the admin route | Audit data exposed | Role check, deny by default | SEC-02 tests | Planned |
-| 3 | User role | User to PATCH /users/{id} | Tampering | User sends a role field in the body | Privilege escalation | Explicit request DTOs | SEC-03 tests | Planned |
+| 1 | Orders | User to GET /orders/{id} | Information disclosure | Tenant A changes the ID to read Tenant B's order | Cross-tenant data leak | Tenant-scoped queries | SEC-01 tests | Fixed |
+| 2 | Admin audit log | User to GET /admin/audit | Elevation of privilege | Normal user calls the admin route | Audit data exposed | Role check, deny by default | SEC-02 tests | Fixed |
+| 3 | User role | User to PATCH /users/{id} | Tampering | User sends a role field in the body | Privilege escalation | Explicit request DTOs | SEC-03 tests | Fixed |
 | 4 | Access token | Client to API | Spoofing | Stolen or forged token used to call the API | Account takeover | Validate signature, expiry, audience | To write | Open |
 | 5 | Login | User to POST /login | Spoofing | Repeated password guessing | Account takeover | Rate limiting, lockout | To write | Open |
 | 6 | Order data | API to database | Tampering | SQL injection in a search parameter | Data read or altered | Parameterized queries | To write | Open |
