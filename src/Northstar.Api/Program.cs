@@ -19,12 +19,10 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// SEC-01: object-level check. The query is scoped to the caller's tenant.
-// A missing order and another tenant's order both return the same 404.
-app.MapGet("/orders/{id:int}", (int id, ClaimsPrincipal user, DataStore db) =>
+// VULNERABLE (SEC-01): trusts the ID from the URL. No tenant check, so any signed-in user can read any order.
+app.MapGet("/orders/{id:int}", (int id, DataStore db) =>
 {
-    var tenant = user.FindFirstValue("tenant_id");
-    var order = db.Orders.FirstOrDefault(o => o.Id == id && tenant != null && o.TenantId == tenant);
+    var order = db.Orders.FirstOrDefault(o => o.Id == id);
     return order is null ? Results.NotFound() : Results.Ok(order);
 });
 
