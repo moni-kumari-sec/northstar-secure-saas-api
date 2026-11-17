@@ -28,9 +28,8 @@ app.MapGet("/orders/{id:int}", (int id, ClaimsPrincipal user, DataStore db) =>
     return order is null ? Results.NotFound() : Results.Ok(order);
 });
 
-// SEC-02: function-level check. Only the Admin role may read the audit log.
-app.MapGet("/admin/audit", (DataStore db) => Results.Ok(db.AuditLog))
-   .RequireAuthorization("AdminOnly");
+// VULNERABLE (SEC-02): no role check. Any signed-in user can read the admin audit log.
+app.MapGet("/admin/audit", (DataStore db) => Results.Ok(db.AuditLog));
 
 // A user can read only their own profile.
 app.MapGet("/users/{id:int}", (int id, ClaimsPrincipal user, DataStore db) =>
