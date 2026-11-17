@@ -8,7 +8,7 @@ Two tenants (A and B) use one ASP.NET Core API. Users have a role (user or admin
 
 ## Data-flow diagram
 
-To be added as `dfd.png` (drawn in OWASP Threat Dragon).
+![Data-flow diagram](dfd.png)
 
 Elements: tenant users and admin (external), the API (process), the database (data store). Trust boundaries: internet to API, and API to database.
 

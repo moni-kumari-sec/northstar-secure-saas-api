@@ -8,6 +8,12 @@ A small multi-tenant ASP.NET Core API for a fictional company, **Northstar Order
 
 Two customers (Tenant A and Tenant B) share one API. If tenant isolation or role checks fail, one customer can read or change another customer's data. This project shows how that happens, how to fix it, and how to keep it fixed.
 
+## Architecture
+
+![Data-flow diagram](docs/threat-model/dfd.png)
+
+Clients call the API with a token that carries a user, a role and a tenant. The server checks the tenant and role on every request.
+
 ## Findings
 
 | ID | Flaw | Impact (synthetic data) | Fix | Report | Status |
@@ -82,4 +88,4 @@ Centralize authorization in one policy layer, use database-level tenant filters 
 
 ## License
 
-To be added.
+MIT. See [LICENSE](LICENSE).
