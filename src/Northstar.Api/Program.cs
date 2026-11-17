@@ -40,16 +40,18 @@ app.MapGet("/users/{id:int}", (int id, ClaimsPrincipal user, DataStore db) =>
     return record is null ? Results.NotFound() : Results.Ok(record);
 });
 
-// SEC-03: mass assignment. The request type has only the fields a user may change.
-// Role and tenant are not on it, so they cannot be set from the request body.
-app.MapPatch("/users/{id:int}", (int id, UpdateProfileRequest req, ClaimsPrincipal user, DataStore db) =>
+// VULNERABLE (SEC-03): binds the request body straight onto the user model.
+// A client can send "role" or "tenantId" and change them.
+app.MapPatch("/users/{id:int}", (int id, UserRecord req, ClaimsPrincipal user, DataStore db) =>
 {
     if (user.FindFirstValue(ClaimTypes.NameIdentifier) != id.ToString()) return Results.NotFound();
     var record = db.Users.FirstOrDefault(u => u.Id == id);
     if (record is null) return Results.NotFound();
 
-    if (req.DisplayName is not null) record.DisplayName = req.DisplayName;
-    if (req.Email is not null) record.Email = req.Email;
+    if (!string.IsNullOrEmpty(req.DisplayName)) record.DisplayName = req.DisplayName;
+    if (!string.IsNullOrEmpty(req.Email)) record.Email = req.Email;
+    if (!string.IsNullOrEmpty(req.Role)) record.Role = req.Role;
+    if (!string.IsNullOrEmpty(req.TenantId)) record.TenantId = req.TenantId;
     return Results.Ok(record);
 });
 
