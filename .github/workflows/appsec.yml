@@ -1,58 +1,68 @@
-name: AppSec checks
+# AppSec checks: runs automatically on GitHub's servers whenever code is pushed.
+# Three independent jobs: tests, Semgrep (code scan), Trivy (dependency and secret scan).
 
+name: AppSec checks            # the name shown in the repo's Actions tab
+
+# WHEN to run
 on:
   push:
-    branches: [main, "vulnerable/**"]
-  pull_request:
-  workflow_dispatch:
+    branches: [main, "vulnerable/**"]   # pushes to main and to every vulnerable/* branch
+  pull_request:                         # also when a pull request is opened or updated
+  workflow_dispatch:                    # also lets you start it by hand from the Actions tab
 
+# WHAT the job's access token may do (least privilege: read code, write scan results)
 permissions:
-  contents: read
-  security-events: write
+  contents: read             # read the repo's code
+  security-events: write     # upload results to the Security tab
 
 jobs:
+  # ---------------------------------------------------------------- JOB 1
   tests:
     # The vulnerable/* branches are expected to fail their tests, so only run on main and PRs.
     if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # ask GitHub for a fresh Linux virtual machine; it is deleted after the job
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4  (download this repo's code onto the VM)
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4  (install the .NET SDK)
         with:
           dotnet-version: 8.0.x
-      - run: dotnet test --filter Category=Security
+      - run: dotnet test --filter Category=Security   # run the 20 security tests; failing tests fail the job
 
+  # ---------------------------------------------------------------- JOB 2
   semgrep:
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep
+      image: semgrep/semgrep   # run the steps inside Semgrep's own Docker image, so Semgrep is already installed
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Semgrep scan (report only, does not fail the build yet)
+        # --config picks rule packs. --sarif writes results in a standard format. "|| true" means findings do not fail the job.
         run: semgrep scan --config p/csharp --config p/owasp-top-ten --sarif --output semgrep.sarif || true
       - name: Upload SARIF to GitHub code scanning
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        if: always()           # upload even if an earlier step failed
         with:
-          sarif_file: semgrep.sarif
+          sarif_file: semgrep.sarif   # results show up under Security > Code scanning
           category: semgrep
 
+  # ---------------------------------------------------------------- JOB 3
   trivy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Trivy filesystem scan (dependencies, secrets, misconfigurations)
-        uses: aquasecurity/trivy-action@0.35.0
+        # Pinned to a full commit ID (version 0.35.0) because tags can be moved by an attacker.
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln,secret,misconfig
-          severity: HIGH,CRITICAL
+          scan-type: fs              # scan the files in the repo
+          scan-ref: .                # starting at the repo root
+          scanners: vuln,secret,misconfig   # known-vulnerable packages, leaked secrets, risky config
+          severity: HIGH,CRITICAL    # only report serious findings
           format: sarif
           output: trivy.sarif
-          exit-code: "0"
+          exit-code: "0"             # report only; do not fail the build yet
       - name: Upload SARIF to GitHub code scanning
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         if: always()
         with:
           sarif_file: trivy.sarif
